@@ -1,0 +1,4 @@
+*.mp4
+yolov4.pth
+*.jpg
+*.pyc
