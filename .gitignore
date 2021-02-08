@@ -2,3 +2,5 @@
 yolov4.pth
 *.jpg
 *.pyc
+*.txt
+*.png

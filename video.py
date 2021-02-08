@@ -64,6 +64,11 @@ args = vars(ap.parse_args())
 # let's just roll with it -- in future posts I'll show you how to
 # automatically determine the coordinates without pre-supplying them
 
+max_width = 600
+max_height = 600
+green_color = (0, 255, 0)
+blue_color =  (255, 0, 0)
+
 cap = cv2.VideoCapture(args["video"])
 
 pts = []
@@ -110,13 +115,13 @@ def first_frame():
             show_video()
         else:
             ret, frame = cap.read()
-            frame = cv2.resize(frame, (900, 600))
+            frame = cv2.resize(frame, (max_width, max_height))
             cv2.imshow("frame", frame)
             cv2.setMouseCallback("frame", add_point)
             cv2.waitKey(0)
     else:
         ret, frame = cap.read()
-        frame = cv2.resize(frame, (900, 600))
+        frame = cv2.resize(frame, (max_width, max_height))
         cv2.imshow("frame", frame)
         cv2.setMouseCallback("frame", add_point)
         cv2.waitKey(0)
@@ -136,7 +141,7 @@ def show_video():
     )
     model = YOLO("yolov4.pth")  # set use_cuda=False if using CPU
     transformer = Transformer()
-    transformer.four_point_transform(pts)
+    transformer.four_point_transform(pts, max_width, max_height)
     cnt = 0
 
     points_2d = read_point_file(args["2dpoints"])
@@ -145,9 +150,10 @@ def show_video():
     while True:
         ret, frame = cap.read()
         cnt = cnt + 1
-        frame = cv2.resize(frame, (900, 600))
+        frame = cv2.resize(frame, (max_width, max_height))
         for point in pts:
-            frame = cv2.circle(np.float32(frame), (point[0], point[1]), 5, (255, 0, 0), 2)
+            frame = cv2.circle(np.float32(frame), (point[0], point[1]), 5, blue_color, 2)
+        original_frame = frame
 
         time1 = time.time()
         detections = model(frame)
@@ -161,26 +167,28 @@ def show_video():
         norfair.draw_points(frame, detections)
         tracked_objects = tracker.update(detections=detections)
         frame = transformer.get_warp(frame)
-        frame_2d = np.zeros((600, 700, 3))
+        frame_2d = np.zeros((max_width, max_height, 3))
         ratio = points_2d.max(axis=0) - points_2d.min(axis=0)
         print("ratio : ", ratio)
         for point in points_2d:
-            frame_2d = cv2.circle(np.float32(frame_2d), (point[0], point[1]), 5, (255, 0, 0), 2)
+            frame_2d = cv2.circle(np.float32(frame_2d), (point[0], point[1]), 5, blue_color, 2)
         for tracked_object in tracked_objects:
             box_points = tracked_object.last_detection.points
             transform_point = transformer.convert_point(box_points)
             base_point = transformer.convert_point(pts[0])
             transform_point = [int(transform_point[0]), int(transform_point[1])]
-            frame = cv2.circle(np.float32(frame), (transform_point[0], transform_point[1]), 5, (0, 255, 0), 2)
+            frame = cv2.circle(np.float32(frame), (transform_point[0], transform_point[1]), 5, green_color, 2)
             map_point = [(transform_point[0] - base_point[0]) / transformer.get_max_width(), (transform_point[1] - base_point[1]) / transformer.get_max_height()]
             map_point = [int(points_2d[0][0] + map_point[0] * ratio[0]), int(points_2d[0][1] + map_point[1] * ratio[1])]
-            frame_2d = cv2.circle(np.float32(frame_2d), (map_point[0], map_point[1]), 5, (0, 255, 0), 2)
+            frame_2d = cv2.circle(np.float32(frame_2d), (map_point[0], map_point[1]), 5, green_color, 2)
 
         # norfair.draw_tracked_objects(frame, tracked_objects)
 
        	frame = frame.astype(np.uint8)
         frame_2d = frame_2d.astype(np.uint8)
-        cv2.imshow("transform vid", frame)
+        original_frame = original_frame.astype(np.uint8)
+        cv2.imshow("original vid", original_frame)
+        # cv2.imshow("transform vid", frame)
         cv2.imshow("2d vid", frame_2d)
 
         if (cv2.waitKey(1) & 0xFF == ord('q')):

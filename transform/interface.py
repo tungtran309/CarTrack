@@ -1,17 +1,29 @@
 # import the necessary packages
-from transform import four_point_transform
+from transform import *
 import numpy as np
 import argparse
 import cv2
 
 pts = []
 
+transformer = Transformer()
+
+# max_width = 1449
+# max_height = 2048
+max_width = 483
+max_height = 682
+
+
 def show(pts):
-    warped = four_point_transform(image, pts)
+    height, width, channels = image.shape
+    transformer.four_point_transform(pts, max_height, max_width)
+    warped = transformer.get_warp(image)
+    print(warped.shape)
     # show the original and warped images
 
     cv2.imshow("Warped", warped)
     cv2.waitKey(0)
+    cv2.imwrite("Transformed_" + args["image"], warped)
 
 
 def add_point(event, x, y, flags, param):
@@ -34,8 +46,9 @@ args = vars(ap.parse_args())
 # let's just roll with it -- in future posts I'll show you how to
 # automatically determine the coordinates without pre-supplying them
 image = cv2.imread(args["image"])
-image = cv2.resize(image, (900, 600))
+image = cv2.resize(image, (max_width, max_height))
 cv2.imshow("image", image)
+
 cv2.setMouseCallback("image", add_point)
 
 # pts = np.array(eval(args["coords"]), dtype = "float32")

@@ -27,9 +27,9 @@ class Transformer:
         # return the ordered coordinates
         return rect
     def get_max_width(self):
-        return 900 / self.b
+        return self.vid_width / self.b
     def get_max_height(self):
-        return 600 / self.b
+        return self.vid_height / self.b
 
 
     def convert_point(self, point):
@@ -38,17 +38,20 @@ class Transformer:
         trans_point /= trans_point[2]
         # return trans_point[0:2]
         # return [trans_point[0] / self.maxWidth, trans_point[1] / self.maxHeight]
-        return [trans_point[0] / self.maxWidth / self.b * 900, trans_point[1] / self.maxHeight / self.b * 600];
+        return [trans_point[0] / self.maxWidth / self.b * self.vid_width, trans_point[1] / self.maxHeight / self.b * self.vid_height];
 
 
     def get_warp(self, image):
         # print(" ============== b : ", self.b)
         warped = cv2.warpPerspective(image, self.M, (self.maxWidth * self.b, self.maxHeight * self.b))
+        print("result : ", warped.shape)
         # return the warped image
-        return cv2.resize(warped, (900, 600))
+        return cv2.resize(warped, (self.vid_height, self.vid_width))
 
 
-    def four_point_transform(self, pts):
+    def four_point_transform(self, pts, vid_width, vid_height):
+        self.vid_width = vid_width
+        self.vid_height = vid_height
         # obtain a consistent order of the points and unpack them
         # individually
         rect = self.order_points(pts)
@@ -74,7 +77,7 @@ class Transformer:
         # (i.e. top-down view) of the image, again specifying points
         # in the top-left, top-right, bottom-right, and bottom-left
         # order
-        b = 9
+        b = 1
         dst = np.array([
             [b // 2 * maxWidth, b//2 * maxHeight],
             [b // 2 * maxWidth + maxWidth, b//2 * maxHeight],
